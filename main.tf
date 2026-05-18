@@ -8,6 +8,7 @@ terraform {
     }
   }
 }
+
 provider "aws" {
   region = var.region
 }
@@ -16,19 +17,22 @@ provider "aws" {
 # ECR Repository
 # -------------------------
 resource "aws_ecr_repository" "app_repo" {
-  name = var.repo_name
+  name                 = var.repo_name
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = true
   }
 
   tags = {
-    Name = "ECR Repo"
+    Name        = var.repo_name
+    Environment = "dev"
   }
 }
 
 # -------------------------
-# VPC (for EKS)
+# VPC for EKS
 # -------------------------
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
@@ -44,8 +48,20 @@ module "vpc" {
   enable_nat_gateway = true
   single_nat_gateway = true
 
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
+  public_subnet_tags = {
+    "kubernetes.io/role/elb" = "1"
+  }
+
+  private_subnet_tags = {
+    "kubernetes.io/role/internal-elb" = "1"
+  }
+
   tags = {
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+    Environment = "dev"
   }
 }
 
@@ -57,10 +73,12 @@ module "eks" {
   version = "20.0.0"
 
   cluster_name    = var.cluster_name
-  cluster_version = "1.28"
+  cluster_version = "1.29"
 
-  subnet_ids = module.vpc.private_subnets
   vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnets
+
+  cluster_endpoint_public_access = true
 
   enable_irsa = true
 
@@ -71,6 +89,8 @@ module "eks" {
       max_size     = 3
 
       instance_types = ["t3.medium"]
+
+      ami_type = "AL2023_x86_64_STANDARD"
     }
   }
 
