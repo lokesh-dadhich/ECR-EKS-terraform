@@ -82,26 +82,6 @@ module "eks" {
 
   enable_irsa = true
 
-  # This gives admin access to the IAM role/user that creates the cluster
-  enable_cluster_creator_admin_permissions = true
-
-  # This gives Jenkins IAM role access to EKS
-  access_entries = {
-    jenkins = {
-      principal_arn = "arn:aws:iam::809338888549:role/terraform"
-
-      policy_associations = {
-        admin = {
-          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-
-          access_scope = {
-            type = "cluster"
-          }
-        }
-      }
-    }
-  }
-
   eks_managed_node_groups = {
     default = {
       desired_size = 2
