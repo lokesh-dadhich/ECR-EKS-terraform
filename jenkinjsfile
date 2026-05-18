@@ -18,6 +18,12 @@ pipeline {
             }
         }
 
+        stage('Terraform Validate') {
+            steps {
+                sh 'terraform validate'
+            }
+        }
+
         stage('Terraform Plan') {
             steps {
                 sh 'terraform plan'
@@ -28,3 +34,22 @@ pipeline {
             steps {
                 sh 'terraform apply -auto-approve'
             }
+        }
+
+        stage('Show Terraform Output') {
+            steps {
+                sh 'terraform output'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Terraform infrastructure deployed successfully: ECR and EKS created.'
+        }
+
+        failure {
+            echo 'Terraform deployment failed. Check Jenkins console logs.'
+        }
+    }
+}
